@@ -10,4 +10,3 @@ router.get("/partner", protect, isPartner, getPartnerOrders);
 router.put("/:id/status", protect, isPartner, updateOrderStatus); // Only partner updates status
 router.put("/:id/cancel", protect, cancelOrder); // User can cancel
 
-module.exports = router;
