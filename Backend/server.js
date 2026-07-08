@@ -49,7 +49,7 @@ if (process.env.NODE_ENV === "production" || process.env.NODE_ENV === "deploy") 
 
 // 🌐 Database Connection
 mongoose.connect(process.env.MONGO_URI)
-.then(() => console.log("✅ MongoDB Connected"))
+.then((conn) => console.log(`✅ MongoDB Connected to ${conn.connection.host}`))
 .catch((err) => console.error("❌ DB Connection Error:", err.message));
 
 // Only run listen() if we are NOT on Vercel

@@ -4,7 +4,7 @@ const Food = require("./models/Food");
 const User = require("./models/User");
 const bcrypt = require("bcryptjs");
 
-mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/reelbite")
+mongoose.connect(process.env.MONGO_URI)
 .then(async () => {
   console.log("Connected to MongoDB for Seeding...");
   
