@@ -1,9 +1,10 @@
 import { useContext, useState } from "react";
 import { CartContext } from "../context/CartContext";
 import { AuthContext } from "../context/AuthContext";
-import axios from "axios";
-import { Trash2, ShoppingBag, MapPin, Plus, Minus, Tag, Clock } from "lucide-react";
+import API from "../api/api";
+import { Trash2, ShoppingBag, MapPin, Plus, Minus, Tag, Clock, ArrowRight, Store } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function CartPage() {
   const { cart, addToCart, removeFromCart, getCartTotal, clearCart } = useContext(CartContext);
@@ -12,40 +13,32 @@ export default function CartPage() {
   const [showCouponInput, setShowCouponInput] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [discount, setDiscount] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState("cod");
   const navigate = useNavigate();
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
     setLoading(true);
-
     try {
-      const orderData = {
-        items: cart.map(item => ({
-          food: item.food._id,
-          quantity: item.quantity,
-          price: item.price
-        })),
-        totalAmount: calculateTotal() + 5, // including platform fee
-        deliveryAddress: user?.address || "Default Address"
-      };
-
-      await axios.post("/api/orders", orderData);
-      clearCart();
-      alert("Order placed successfully!");
-      navigate("/profile");
+        const orderData = {
+           items: cart.map(item => ({ food: item.food._id, quantity: item.quantity, price: item.price })),
+           totalAmount: calculateTotal(),
+           deliveryAddress: user?.address || "Address",
+           paymentMethod
+        };
+        await API.post("/orders", orderData);
+        clearCart();
+        navigate("/profile");
     } catch (err) {
-      alert("Failed to place order");
-      console.error(err);
+        alert("Failed to place order.");
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
   };
 
   const calculateTotal = () => {
       const subtotal = getCartTotal();
-      const deliveryFee = 40;
-      const gst = Math.round(subtotal * 0.05); // 5% GST mock
-      return Math.max(0, subtotal + deliveryFee + gst - discount);
+      return Math.max(0, subtotal - discount);
   };
 
   const applyCoupon = () => {
@@ -59,216 +52,278 @@ export default function CartPage() {
       }
   };
 
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const listItemNode = {
+    hidden: { opacity: 0, x: -20 },
+    show: { opacity: 1, x: 0 }
+  };
+
   if (cart.length === 0) {
     return (
-      <div className="max-w-md md:max-w-5xl mx-auto min-h-screen px-4 py-8 flex flex-col items-center justify-center -mt-14 bg-[#1C1C1C]">
-        <div className="w-48 h-48 mb-6 opacity-80">
+      <div className="max-w-md md:max-w-5xl mx-auto min-h-screen px-4 py-8 flex flex-col items-center justify-center -mt-14 bg-[var(--bg-primary)] transition-colors duration-300">
+        <motion.div 
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="w-48 h-48 mb-6 opacity-80"
+        >
            <img src="https://media-assets.swiggy.com/swiggy/image/upload/fl_lossy,f_auto,q_auto/2xempty_cart_yfxml0" alt="Empty Cart" className="w-full h-full object-contain filter grayscale invert opacity-50" />
-        </div>
-        <h2 className="text-xl font-bold mb-2 text-white/90">Your cart is empty</h2>
-        <p className="text-white/50 text-center mb-8 text-sm">You can go to home page to view more restaurants</p>
-        <button 
+        </motion.div>
+        <motion.h2 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-xl font-bold mb-2 text-[var(--text-primary)]">Your cart is empty</motion.h2>
+        <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="text-[var(--text-secondary)] text-center mb-8 text-sm">You can go to home page to view more restaurants</motion.p>
+        <motion.button 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.4 }}
           onClick={() => navigate("/home")}
-          className="px-8 py-3 bg-[#FC8019] text-white font-bold uppercase tracking-wide text-sm shadow-lg shadow-[#FC8019]/20"
+          className="px-8 py-3 bg-[var(--brand-orange)] text-white font-bold uppercase tracking-wide text-sm shadow-lg shadow-orange-500/20 active:scale-95 transition-all"
         >
           See Restaurants near you
-        </button>
+        </motion.button>
       </div>
     );
   }
 
-  // Get restaurant name for the top of the cart (assuming all items from same restaurant for mock)
   const restaurantName = cart[0]?.food?.restaurant || "Restaurant";
-  const restaurantImage = cart[0]?.food?.imageUrl;
 
   return (
-    <div className="max-w-md md:max-w-5xl mx-auto min-h-screen bg-[#121212] pb-[140px] md:pb-[100px]">
+    <div className="max-w-md md:max-w-7xl mx-auto min-h-screen bg-[var(--bg-primary)] pb-[200px] md:pb-[120px] transition-colors duration-300">
       
       {/* Header */}
-      <div className="bg-[#1C1C1C] px-4 py-4 pt-16 flex items-center shadow-sm">
-          <button onClick={() => navigate(-1)} className="mr-4 p-2 -ml-2 rounded-full hover:bg-white/5">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      <motion.div 
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="bg-[var(--glass-bg)] px-4 py-4 pt-16 flex items-center shadow-sm border-b border-[var(--border-color)] transition-colors"
+      >
+          <button onClick={() => navigate(-1)} className="mr-4 p-2 -ml-2 rounded-full hover:bg-[var(--text-primary)]/5 transition-colors">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-[var(--text-primary)]" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
           </button>
           <div>
-            <h1 className="font-bold text-lg text-white leading-tight">{restaurantName}</h1>
-            <p className="text-xs text-white/60">Order for yourself</p>
+            <h1 className="font-black text-xl text-[var(--text-primary)] leading-tight tracking-tight">{restaurantName}</h1>
+            <p className="text-xs text-[var(--text-secondary)] font-bold uppercase tracking-widest">Checkout</p>
           </div>
-      </div>
+      </motion.div>
 
-      <div className="p-4 space-y-4 md:space-y-0 md:grid md:grid-cols-3 md:gap-6 md:items-start text-left">
+      <div className="p-4 space-y-4 md:space-y-0 md:grid md:grid-cols-3 md:gap-8 md:items-start text-left max-w-7xl mx-auto mt-6">
           
         {/* Left Column: Cart Items */}
-        <div className="md:col-span-2 space-y-4">
-          {/* Cart Items Card */}
-        <div className="bg-[#1C1C1C] rounded-2xl p-4 shadow-sm border border-white/5">
-          <div className="flex items-center gap-2 pb-4 mb-4 border-b border-white/10 border-dashed">
-             <Clock className="w-4 h-4 text-[#FC8019]" />
-             <span className="text-sm font-bold text-white">Delivery in 25-30 mins</span>
-          </div>
+        <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="md:col-span-2 space-y-6"
+        >
+          <div className="bg-[var(--bg-surface)] rounded-3xl p-6 shadow-xl shadow-black/[0.02] border border-[var(--border-color)] transition-colors">
+            <motion.div 
+               initial={{ opacity: 0, y: 10 }}
+               animate={{ opacity: 1, y: 0 }}
+               className="flex items-center gap-3 pb-6 mb-6 border-b border-[var(--border-color)] border-dashed"
+            >
+               <div className="w-10 h-10 rounded-full bg-[var(--brand-orange)]/10 flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-[var(--brand-orange)]" />
+               </div>
+               <div>
+                  <span className="text-sm font-black text-[var(--text-primary)]">Delivery in 25-30 mins</span>
+                  <p className="text-[11px] text-[var(--text-secondary)] font-bold uppercase tracking-wider">Fastest in your area</p>
+               </div>
+            </motion.div>
 
-          <div className="space-y-6">
-            {cart.map((item) => (
-              <div key={item.food._id} className="flex items-start gap-4">
-                
-                {/* Food info */}
-                <div className="flex-grow">
-                   <div className={`w-3 h-3 rounded-sm border flex items-center justify-center mb-1.5 ${item.food.isVeg ? "border-[#3D9970]" : "border-[#E23744]"}`}>
-                        <div className={`w-1.5 h-1.5 rounded-full ${item.food.isVeg ? "bg-[#3D9970]" : "bg-[#E23744]"}`} />
-                   </div>
-                   <h3 className="font-semibold text-sm text-white">{item.food.name}</h3>
-                   <div className="text-white font-medium text-sm mt-1">₹{item.price}</div>
-                   
-                   {/* Customizer Mock */}
-                   <div className="text-[10px] text-white/50 mt-1 cursor-pointer">Customize ›</div>
-                </div>
+            <motion.div 
+                variants={staggerContainer}
+                initial="hidden"
+                animate="show"
+                className="space-y-8"
+            >
+              {cart.map((item) => (
+                <motion.div 
+                    key={item.food._id} 
+                    variants={listItemNode}
+                    className="flex items-start gap-5"
+                >
+                  <div className="flex-grow">
+                     <div className={`w-4 h-4 rounded border-2 flex items-center justify-center mb-2 bg-[var(--bg-primary)] ${item.food.isVeg ? "border-[#3D9970]" : "border-[#E23744]"}`}>
+                          <div className={`w-2 h-2 rounded-full ${item.food.isVeg ? "bg-[#3D9970]" : "bg-[#E23744]"}`} />
+                     </div>
+                     <h3 className="font-black text-lg text-[var(--text-primary)] leading-tight tracking-tight">{item.food.name}</h3>
+                     <div className="text-[var(--text-primary)] font-black text-lg mt-1 tracking-tight">₹{item.price}</div>
+                  </div>
 
-                {/* Sub-controls */}
-                <div className="relative shrink-0">
-                    <div className="w-24 h-24 rounded-xl overflow-hidden bg-[#2A2A2A] shadow-sm">
-                        {item.food.imageUrl ? (
-                           <img src={item.food.imageUrl} alt={item.food.name} className="w-full h-full object-cover" />
-                        ) : (
-                           <div className="w-full h-full flex items-center justify-center text-3xl">🍽️</div>
-                        )}
-                    </div>
-                    {/* Quantity Stepper */}
-                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-[#1C1C1C] border border-[#FC8019]/50 shadow-md rounded-lg flex items-center justify-between w-20 h-8 px-1">
-                        <button 
-                            onClick={() => removeFromCart(item.food._id)}
-                            className="w-6 h-full flex items-center justify-center text-[#FC8019] text-xl font-medium active:bg-[#FC8019]/10 rounded"
-                        >
-                            <Minus className="w-3.5 h-3.5" />
-                        </button>
-                        <span className="text-xs font-bold text-white w-4 text-center">{item.quantity}</span>
-                        <button 
-                            onClick={() => addToCart(item.food)}
-                            className="w-6 h-full flex items-center justify-center text-[#FC8019] text-xl font-medium active:bg-[#FC8019]/10 rounded"
-                        >
-                            <Plus className="w-3.5 h-3.5" />
-                        </button>
-                    </div>
-                </div>
-
-              </div>
-            ))}
+                  <div className="relative shrink-0">
+                      <div className="w-28 h-28 rounded-2xl overflow-hidden bg-[var(--bg-primary)] shadow-inner border border-[var(--border-color)]">
+                          {item.food.imageUrl ? (
+                             <img src={item.food.imageUrl} alt={item.food.name} className="w-full h-full object-cover" />
+                          ) : (
+                             <div className="w-full h-full flex items-center justify-center text-3xl">🍽️</div>
+                          )}
+                      </div>
+                      <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-[var(--bg-surface)] border-2 border-[var(--text-primary)] shadow-xl rounded-xl flex items-center justify-between w-24 h-10 px-2">
+                          <button onClick={() => removeFromCart(item.food._id)} className="w-8 h-full flex items-center justify-center text-[var(--text-primary)] hover:bg-[var(--text-primary)]/5 transition-colors">
+                              <Minus className="w-4 h-4" strokeWidth={3} />
+                          </button>
+                          <span className="text-sm font-black text-[var(--text-primary)] w-6 text-center">{item.quantity}</span>
+                          <button onClick={() => addToCart(item.food)} className="w-8 h-full flex items-center justify-center text-[var(--brand-orange)] hover:bg-[var(--brand-orange)]/10 transition-colors">
+                              <Plus className="w-4 h-4" strokeWidth={3} />
+                          </button>
+                      </div>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
           </div>
-          
-          <div className="mt-8 pt-4 pb-1 border-t border-white/5 cursor-pointer flex gap-3 text-white/80 hover:text-white">
-              <svg className="w-5 h-5 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-              <span className="text-sm font-medium">Add cooking instructions</span>
-          </div>
-        </div>
-        </div>
+        </motion.div>
 
         {/* Right Column: Bill & Offers */}
-        <div className="md:col-span-1 space-y-4">
-          {/* Offers Card */}
-        <div className="bg-[#1C1C1C] rounded-2xl p-4 shadow-sm border border-white/5 flex flex-col justify-center">
-            <div className="flex items-center justify-between cursor-pointer" onClick={() => setShowCouponInput(!showCouponInput)}>
-                <div className="flex items-center gap-3">
-                    <Tag className="w-5 h-5 text-blue-400" />
-                    <span className="text-sm font-bold text-white">Apply Coupon</span>
-                </div>
-                <span className="text-[#FC8019] text-sm font-bold uppercase">{showCouponInput ? "Close" : "Select"}</span>
-            </div>
-            
-            {showCouponInput && (
-               <div className="mt-4 flex items-center gap-2">
-                   <input 
-                      type="text" 
-                      placeholder="Enter SWIGGY50"
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value)}
-                      className="flex-grow bg-[#2A2A2A] text-white border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FC8019]/50"
-                   />
-                   <button 
-                      onClick={applyCoupon}
-                      className="bg-[#FC8019] text-white px-4 py-2 rounded-lg text-sm font-bold disabled:opacity-50"
-                      disabled={!couponCode.trim()}
+        <div className="md:col-span-1 space-y-6">
+          <motion.div 
+             initial={{ opacity: 0, x: 20 }}
+             animate={{ opacity: 1, x: 0 }}
+             transition={{ delay: 0.2 }}
+             className="bg-[var(--bg-surface)] rounded-3xl p-6 shadow-xl shadow-black/[0.02] border border-[var(--border-color)] flex flex-col justify-center"
+          >
+              <div className="flex items-center justify-between cursor-pointer" onClick={() => setShowCouponInput(!showCouponInput)}>
+                  <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-[var(--brand-orange)]/10 flex items-center justify-center">
+                         <Tag className="w-5 h-5 text-[var(--brand-orange)]" />
+                      </div>
+                      <span className="text-base font-black text-[var(--text-primary)] tracking-tight">Apply Coupon</span>
+                  </div>
+                  <span className="text-[var(--brand-orange)] text-sm font-black uppercase tracking-widest">{showCouponInput ? "CLOSE" : "SELECT"}</span>
+              </div>
+              <AnimatePresence>
+                {showCouponInput && (
+                   <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="mt-6 flex items-center gap-3 overflow-hidden"
                    >
-                      APPLY
-                   </button>
-               </div>
-            )}
-        </div>
+                       <input 
+                          type="text" 
+                          placeholder="e.g. SWIGGY50"
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value)}
+                          className="flex-grow bg-[var(--bg-primary)] text-[var(--text-primary)] border-2 border-[var(--border-color)] rounded-2xl px-4 py-3 text-sm font-black focus:outline-none focus:border-[var(--brand-orange)]/50 transition-all placeholder-[var(--text-secondary)]"
+                       />
+                       <button 
+                          onClick={applyCoupon}
+                          className="bg-[var(--brand-orange)] text-white px-6 py-3 rounded-2xl text-xs font-black tracking-widest disabled:opacity-50 shadow-lg shadow-orange-500/20 active:scale-95 transition-all"
+                          disabled={!couponCode.trim()}
+                       >
+                          APPLY
+                       </button>
+                   </motion.div>
+                )}
+              </AnimatePresence>
+          </motion.div>
 
-        {/* Bill Details */}
-        <div className="bg-[#1C1C1C] rounded-2xl p-4 shadow-sm border border-white/5">
-          <h3 className="font-bold mb-4 text-white">Bill Details</h3>
-          <div className="space-y-3 text-xs">
-            <div className="flex justify-between text-white/70">
-              <span>Item Total</span>
-              <span>₹{getCartTotal()}</span>
+          {/* Payment Method Section (Myntra Style) */}
+          <motion.div 
+             initial={{ opacity: 0, x: 20 }}
+             animate={{ opacity: 1, x: 0 }}
+             transition={{ delay: 0.25 }}
+             className="bg-[var(--bg-surface)] rounded-3xl p-6 shadow-xl shadow-black/[0.02] border border-[var(--border-color)] flex flex-col justify-center"
+          >
+            <h3 className="font-black text-lg text-[var(--text-primary)] mb-4 tracking-tight flex items-center">
+               Payment Method <div className="ml-3 h-[2px] w-8 bg-[var(--brand-orange)] rounded-full" />
+            </h3>
+            <div className="space-y-3">
+               <label className={`flex items-center p-3 border rounded-xl cursor-pointer transition-all ${paymentMethod === 'cod' ? 'border-[var(--brand-orange)] bg-[var(--brand-orange)]/5' : 'border-[var(--border-color)]'}`}>
+                 <input type="radio" name="payment" value="cod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} className="mr-3 accent-[var(--brand-orange)] w-4 h-4" />
+                 <span className="text-sm font-bold text-[var(--text-primary)]">Cash on Delivery</span>
+               </label>
+               <label className={`flex items-center p-3 border rounded-xl cursor-pointer transition-all ${paymentMethod === 'upi' ? 'border-[var(--brand-orange)] bg-[var(--brand-orange)]/5' : 'border-[var(--border-color)]'}`}>
+                 <input type="radio" name="payment" value="upi" checked={paymentMethod === 'upi'} onChange={() => setPaymentMethod('upi')} className="mr-3 accent-[var(--brand-orange)] w-4 h-4" />
+                 <span className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
+                    UPI 
+                    <span className="text-[10px] bg-[var(--bg-primary)] px-2 py-0.5 rounded text-[var(--text-secondary)] border border-[var(--border-color)]">Google Pay, PhonePe</span>
+                 </span>
+               </label>
+               <label className={`flex items-center p-3 border rounded-xl cursor-pointer transition-all ${paymentMethod === 'card' ? 'border-[var(--brand-orange)] bg-[var(--brand-orange)]/5' : 'border-[var(--border-color)]'}`}>
+                 <input type="radio" name="payment" value="card" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} className="mr-3 accent-[var(--brand-orange)] w-4 h-4" />
+                 <span className="text-sm font-bold text-[var(--text-primary)]">Credit / Debit Card</span>
+               </label>
             </div>
-            <div className="flex justify-between text-white/70">
-              <span>Delivery Fee | 3.5 kms</span>
-              <span>₹40</span>
-            </div>
-            <hr className="border-white/5 my-2" />
-            
-            {discount > 0 && (
-               <div className="flex justify-between text-green-400 font-bold">
-                  <span>Coupon Discount</span>
-                  <span>-₹{discount}</span>
-               </div>
-            )}
-            
-            <div className="flex justify-between text-white/70">
-              <span>Platform fee</span>
-              <span>₹5</span>
-            </div>
-            <div className="flex justify-between text-white/70">
-              <span>GST and Restaurant Charges</span>
-              <span>₹{Math.round(getCartTotal() * 0.05)}</span>
-            </div>
-            <hr className="border-white/10 my-3 border-dashed" />
-            <div className="flex justify-between font-bold text-sm text-white">
-              <span className="uppercase">To Pay</span>
-              <span>₹{calculateTotal() + 5}</span> {/* +5 for platform fee */}
-            </div>
-          </div>
-        </div>
+          </motion.div>
 
-        {/* Cancellation Policy */}
-        <div className="bg-[#1C1C1C] rounded-2xl p-4 shadow-sm border border-white/5">
-            <h3 className="font-bold text-sm text-white mb-2">Review your order and address details to avoid cancellations</h3>
-            <p className="text-xs text-white/50 leading-relaxed">
-               <span className="text-red-400 font-semibold">Note:</span> If you choose to cancel, you can do it within 60 seconds after placing order. A 100% cancellation fee will be applicable afterwards.
-            </p>
-        </div>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-[var(--bg-surface)] rounded-3xl p-6 shadow-xl shadow-black/[0.02] border border-[var(--border-color)] group transition-colors"
+          >
+            <h3 className="font-black text-lg text-[var(--text-primary)] mb-6 tracking-tight flex items-center">
+               Bill Details <div className="ml-3 h-[2px] w-8 bg-[var(--brand-orange)] rounded-full" />
+            </h3>
+            <div className="space-y-4 text-sm font-bold text-[var(--text-secondary)]">
+              <div className="flex justify-between items-center">
+                <span>Item Total</span>
+                <span className="text-[var(--text-primary)]">₹{getCartTotal()}</span>
+              </div>
+              <hr className="border-[var(--border-color)] my-4" />
+              {discount > 0 && (
+                 <div className="flex justify-between items-center text-[#3D9970] font-black italic">
+                    <span>Coupon Discount</span>
+                    <span>-₹{discount}</span>
+                 </div>
+              )}
+              <div className="pt-2">
+                 <div className="flex justify-between items-end">
+                    <div>
+                       <p className="text-[10px] uppercase font-black text-[var(--text-secondary)] tracking-widest mb-1">Grand Total</p>
+                       <span className="text-2xl font-black text-[var(--text-primary)] tracking-tighter">₹{calculateTotal()}</span>
+                    </div>
+                    {discount > 0 && <div className="text-[10px] font-black text-[#3D9970] bg-[#3D9970]/10 px-2 py-1 rounded-lg uppercase tracking-wider">Saved ₹{discount}</div>}
+                 </div>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </div>
 
-      {/* Floating Checkout Bar overlaying the bottom nav safe area */}
-      <div className="fixed bottom-[4rem] left-0 right-0 z-[60] bg-[#1C1C1C] border-t border-white/10 p-3 shadow-[0_-10px_20px_rgba(0,0,0,0.3)]">
-        <div className="max-w-md md:max-w-5xl mx-auto flex items-center gap-3">
-            {/* Delivery address left */}
-            <div className="w-1/2 p-2 bg-[#2A2A2A] rounded-xl flex items-start gap-2">
-                <MapPin className="w-5 h-5 text-[#FC8019] shrink-0 mt-0.5" />
+      {/* Floating Checkout Bar */}
+      <motion.div 
+        initial={{ y: 100 }}
+        animate={{ y: 0 }}
+        transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.5 }}
+        className="fixed bottom-[4rem] left-0 right-0 z-[60] bg-[var(--bg-surface)] border-t border-[var(--border-color)] p-4 shadow-[0_-20px_40px_rgba(0,0,0,0.05)] transition-colors"
+      >
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            <div className="flex-grow max-w-[50%] p-3 bg-[var(--bg-primary)] rounded-[2rem] flex items-center gap-4 transition-all hover:bg-[var(--bg-surface)] hover:shadow-lg border border-transparent hover:border-[var(--border-color)] cursor-pointer">
+                <div className="w-10 h-10 rounded-full bg-[var(--bg-surface)] shadow-sm flex items-center justify-center shrink-0 border border-[var(--border-color)]">
+                   <MapPin className="w-5 h-5 text-[var(--brand-orange)]" />
+                </div>
                 <div className="overflow-hidden">
-                   <div className="text-[11px] font-bold text-white/50 uppercase tracking-widest mb-0.5">Delivering To</div>
-                   <div className="text-sm font-bold text-white truncate">Home</div>
-                   <div className="text-xs text-white/60 truncate">{user?.address || "Please select address"}</div>
+                   <div className="text-[9px] font-black text-[var(--text-secondary)] uppercase tracking-widest mb-0.5">Delivering to</div>
+                   <div className="text-sm font-black text-[var(--text-primary)] truncate leading-tight">Home ⋅ {user?.address || "Address"}</div>
                 </div>
             </div>
 
-            {/* Pay Button */}
             <button 
               onClick={handleCheckout}
               disabled={loading}
-              className="w-1/2 h-full bg-[#1DE9B6] text-[#0A4A38] rounded-xl font-bold flex flex-col justify-center px-4 active:scale-95 transition-all outline-none"
+              className="flex-grow max-w-[50%] h-16 bg-[var(--text-primary)] text-[var(--bg-primary)] rounded-[2rem] font-black flex items-center justify-between px-8 shadow-2xl active:scale-95 transition-all group overflow-hidden relative"
             >
-               <div className="text-xs uppercase tracking-wide font-extrabold opacity-80 mb-0.5">Pay Using</div>
-               <div className="flex items-center justify-between">
-                   <span className="text-sm sm:text-base font-bold">Cash on Delivery</span>
-                   <span className="text-base sm:text-lg font-extrabold ml-1">›</span>
+               <div className="relative z-10">
+                   <div className="text-[10px] uppercase tracking-widest font-black opacity-50 mb-0.5 text-left text-[var(--bg-primary)]">
+                       {paymentMethod === 'cod' ? 'Confirm Order' : `Pay ₹${calculateTotal()}`}
+                   </div>
+                   <div className="text-lg font-black tracking-tight uppercase">
+                       {paymentMethod === 'cod' ? 'CASH ON DELIVERY' : (paymentMethod === 'upi' ? 'PAY VIA UPI' : 'PAY VIA CARD')}
+                   </div>
+               </div>
+               <div className="relative z-10 w-10 h-10 rounded-full bg-[var(--bg-primary)]/10 flex items-center justify-center group-hover:translate-x-1 transition-transform">
+                   <ArrowRight className="w-6 h-6 text-[var(--bg-primary)]" />
                </div>
             </button>
         </div>
-      </div>
-      
-      {/* Spacer to fix any underlap behind nav since nav is z-50 and cart is z-60 */}
-      <div className="h-4"></div>
+      </motion.div>
     </div>
   );
 }

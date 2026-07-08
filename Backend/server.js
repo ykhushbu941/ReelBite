@@ -8,6 +8,8 @@ const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
 const foodRoutes = require("./routes/foodRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+const iprRoutes = require("./routes/iprRoutes");
+const path = require("path");
 
 // Models
 const Food = require("./models/Food");
@@ -20,18 +22,19 @@ const app = express();
 // 🔧 Middlewares
 app.use(cors());
 app.use(express.json());
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // 🔍 Health Check Route (Production practice)
 app.get("/", (req, res) => {
-  res.send("🚀 ReelBite API Running...");
+  res.send("🚀 QuickBites API Running...");
 });
 
 // 🔐 API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/foods", foodRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/ipr", iprRoutes);
 
-const path = require("path");
 
 // ❌ Error Handling Middleware (must be last)
 app.use(errorHandler);

@@ -5,6 +5,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, unique: true, required: true },
   password: { type: String, required: true },
   role: { type: String, default: "user" }, // user / partner
+  restaurantName: { type: String, default: "" },
   phone: { type: String, default: "" },
   address: { type: String, default: "" },
   savedFoods: [{ type: mongoose.Schema.Types.ObjectId, ref: "Food" }],

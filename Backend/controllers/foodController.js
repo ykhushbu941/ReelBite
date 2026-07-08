@@ -75,20 +75,60 @@ exports.likeFood = async (req, res) => {
 // ✅ ADD FOOD (Partner Only)
 exports.addFood = async (req, res) => {
   try {
-    const { name, videoUrl, price, restaurant, description, category } = req.body;
+    console.log("Upload Body:", req.body);
+    console.log("Upload Files:", req.files);
+    const { name, price, restaurant, description, category, isVeg, cuisine, isAiGenerated, aiStoryboard, verificationMetadata } = req.body;
+
+    // Get files from multer
+    let videoUrl = req.body.videoUrl; // fallback to link if provided
+    let imageUrl = req.body.imageUrl; // fallback to link if provided
+
+    if (req.files) {
+      if (req.files.video && req.files.video[0]) {
+        videoUrl = `/uploads/${req.files.video[0].filename}`;
+      }
+      if (req.files.image && req.files.image[0]) {
+        imageUrl = `/uploads/${req.files.image[0].filename}`;
+      }
+    }
 
     if (!name || !videoUrl || !price || !restaurant) {
       return res.status(400).json({ msg: "All required fields must be filled" });
     }
 
+    // Parse JSON strings if passed via multipart form
+    let parsedStoryboard = [];
+    if (aiStoryboard) {
+      try {
+        parsedStoryboard = typeof aiStoryboard === "string" ? JSON.parse(aiStoryboard) : aiStoryboard;
+      } catch (e) {
+        console.error("Storyboard parse error:", e);
+      }
+    }
+
+    let parsedVerification = undefined;
+    if (verificationMetadata) {
+      try {
+        parsedVerification = typeof verificationMetadata === "string" ? JSON.parse(verificationMetadata) : verificationMetadata;
+      } catch (e) {
+        console.error("Verification parse error:", e);
+      }
+    }
+
     const food = new Food({
       name,
       videoUrl,
+      imageUrl: imageUrl || "",
       price,
       restaurant,
       description,
-      category,
-      createdBy: req.user.id
+      category: category || "Other",
+      isVeg: isVeg === 'true' || isVeg === true,
+      cuisine: cuisine || "Other",
+      createdBy: req.user.id,
+      isAiGenerated: isAiGenerated === 'true' || isAiGenerated === true,
+      aiStoryboard: parsedStoryboard,
+      verificationMetadata: parsedVerification
     });
 
     await food.save();
@@ -96,7 +136,7 @@ exports.addFood = async (req, res) => {
     res.status(201).json(food);
 
   } catch (err) {
-    res.status(500).json({ msg: "Error adding food" });
+    res.status(500).json({ msg: "Error adding food", error: err.message });
   }
 };
 
@@ -147,5 +187,32 @@ exports.addComment = async (req, res) => {
     res.status(201).json(food.comments);
   } catch (err) {
     res.status(500).json({ msg: "Error adding comment", error: err.message });
+  }
+};
+
+// ✅ INCREMENT VIEWS
+exports.incrementViews = async (req, res) => {
+  try {
+    const food = await Food.findById(req.params.id);
+    if (!food) {
+      return res.status(404).json({ msg: "Food not found" });
+    }
+    
+    food.views += 1;
+    await food.save();
+    
+    res.json({ views: food.views });
+  } catch (err) {
+    res.status(500).json({ msg: "Error incrementing views" });
+  }
+};
+
+// ✅ GET MY FOODS (Partner — fetch by createdBy)
+exports.getMyFoods = async (req, res) => {
+  try {
+    const foods = await Food.find({ createdBy: req.user.id }).sort({ createdAt: -1 });
+    res.json(foods);
+  } catch (err) {
+    res.status(500).json({ msg: "Error fetching your foods", error: err.message });
   }
 };

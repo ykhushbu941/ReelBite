@@ -4,14 +4,14 @@ const jwt = require("jsonwebtoken");
 
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, role, phone, address } = req.body;
+    const { name, email, password, role, phone, address, restaurantName } = req.body;
     
     const userExists = await User.findOne({ email });
     if (userExists) return res.status(400).json({ msg: "User already exists" });
 
     const hashed = await bcrypt.hash(password, 10);
 
-    const user = new User({ name, email, password: hashed, role, phone, address });
+    const user = new User({ name, email, password: hashed, role, phone, address, restaurantName });
     await user.save();
 
     res.json({ msg: "Registered" });
@@ -39,7 +39,16 @@ exports.login = async (req, res) => {
       { expiresIn: "30d" }
     );
 
-    res.json({ token, role: user.role, user: { id: user._id, name: user.name, email: user.email } });
+    res.json({ 
+      token, 
+      role: user.role, 
+      user: { 
+        id: user._id, 
+        name: user.name, 
+        email: user.email,
+        restaurantName: user.restaurantName 
+      } 
+    });
   } catch (err) {
     res.status(500).json({ msg: "Error logging in", error: err.message });
   }
@@ -74,5 +83,43 @@ exports.toggleSaveFood = async (req, res) => {
     res.json({ savedFoods: user.savedFoods });
   } catch (err) {
     res.status(500).json({ msg: "Error toggling saved food", error: err.message });
+  }
+};
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const { name, phone, address } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    if (name) user.name = name;
+    if (phone) user.phone = phone;
+    if (address) user.address = address;
+
+    await user.save();
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ msg: "Error updating profile", error: err.message });
+  }
+};
+
+exports.getPartners = async (req, res) => {
+  try {
+    const partners = await User.find({ role: "partner" }).select("name restaurantName address phone restaurantImageUrl logo");
+    res.json(partners);
+  } catch (err) {
+    res.status(500).json({ msg: "Error fetching partners", error: err.message });
+  }
+};
+
+exports.deleteAccount = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    await User.findByIdAndDelete(req.user.id);
+    res.json({ msg: "Account deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ msg: "Error deleting account", error: err.message });
   }
 };

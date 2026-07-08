@@ -1,8 +1,9 @@
 import { useState, useContext } from "react";
-import axios from "axios";
+import API from "../api/api";
 import { useNavigate, Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import { Eye, EyeOff, User, Mail, Lock, Phone, MapPin } from "lucide-react";
+import { Eye, EyeOff, User, Mail, Lock, Phone, MapPin, ChefHat, UtensilsCrossed, ChevronDown } from "lucide-react";
+import TopBar from "../components/TopBar";
 
 export default function Register() {
   const [user, setUser] = useState({ name: "", email: "", password: "", phone: "", address: "", role: "user" });
@@ -11,26 +12,29 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const { login } = useContext(AuthContext); // Will need to import useContext and AuthContext
+  const { login } = useContext(AuthContext);
 
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
+    console.log("Registering with payload:", user);
     try {
-      await axios.post("/api/auth/user/register", user);
+      await API.post("/auth/user/register", user);
       
-      // Auto-login after successful registration
-      const res = await axios.post("/api/auth/user/login", { email: user.email, password: user.password });
+      console.log("Registration successful, logging in...");
+      const res = await API.post("/auth/user/login", { email: user.email, password: user.password });
+      console.log("Login res:", res.data);
+      
       login(res.data.token, res.data.role, res.data.user);
 
       if (res.data.role === "partner") {
-        navigate("/dashboard");
+        navigate("/profile");
       } else {
         navigate("/home");
       }
     } catch (err) {
-      console.error(err);
+      console.error("Registration/Login Error:", err);
       setError(err.response?.data?.msg || err.message || "Failed to register. Is the server running?");
     } finally {
       setLoading(false);
@@ -38,113 +42,145 @@ export default function Register() {
   };
 
   const handleChange = (e) => {
-    setUser({ ...user, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === 'restaurantName') {
+      // Auto-use restaurant name as the account name for the backend
+      setUser({ ...user, restaurantName: value, name: value });
+    } else {
+      setUser({ ...user, [name]: value });
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-brand-dark px-4 py-8 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -top-32 -right-32 w-80 h-80 bg-brand-primary/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-brand-secondary/10 rounded-full blur-3xl" />
-      </div>
-
-      <div className="w-full max-w-sm relative z-10">
-        <div className="text-center mb-6">
-           <h1 className="text-3xl font-extrabold text-white tracking-tight">Create Account</h1>
-           <p className="text-gray-400 text-sm mt-1">Join QuickBites today!</p>
+    <>
+      <TopBar />
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)] px-4 py-16 relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-32 -right-32 w-80 h-80 bg-[var(--brand-orange)]/10 rounded-full blur-3xl opacity-50" />
+          <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-[var(--brand-yellow)]/10 rounded-full blur-3xl opacity-30" />
         </div>
 
-        <div className="bg-brand-gray rounded-3xl p-6 border border-white/8 shadow-2xl">
-          {error && (
-            <div className="mb-4 text-xs text-red-400 bg-red-500/10 p-3 rounded-xl text-center border border-red-500/20 animate-fade-in">
-              {error}
-            </div>
-          )}
+        <div className="w-full max-sm relative z-10">
+          <div className="text-center mb-8">
+             <h1 className="text-4xl font-black text-[var(--text-primary)] tracking-tight">Create Account</h1>
+             <p className="text-[var(--text-secondary)] text-[13px] font-bold mt-2 uppercase tracking-widest opacity-80">Join QuickBites today!</p>
+          </div>
 
-          <form onSubmit={handleRegister} className="space-y-4">
-            {/* Name */}
-            <div className="relative">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-              <input 
-                type="text" name="name" placeholder="Full Name" required
-                className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-brand-primary text-sm transition-all"
-                onChange={handleChange} 
-              />
-            </div>
+          <div className="bg-[var(--bg-surface)] rounded-[3rem] p-8 border border-[var(--border-color)] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)]">
+            {error && (
+              <div className="mb-6 text-[11px] font-black uppercase tracking-widest text-[#E23744] bg-[#E23744]/10 p-4 rounded-2xl text-center border border-[#E23744]/20 animate-shake">
+                {error}
+              </div>
+            )}
 
-            {/* Email */}
-            <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-              <input 
-                type="email" name="email" placeholder="Email" required
-                className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-brand-primary text-sm transition-all"
-                onChange={handleChange} 
-              />
-            </div>
+            <form onSubmit={handleRegister} className="space-y-4">
+              {/* Name - only for Foodies */}
+              {user.role !== 'partner' && (
+                <div className="relative group">
+                  <User className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] group-focus-within:text-[var(--brand-orange)] transition-colors" />
+                  <input 
+                    type="text" name="name" placeholder="Full Name" required
+                    className="w-full pl-12 pr-5 py-4 rounded-[1.25rem] bg-[var(--bg-primary)] border border-transparent text-[var(--text-primary)] placeholder-[var(--text-secondary)]/50 focus:outline-none focus:border-[var(--brand-orange)] text-[13px] font-bold transition-all shadow-sm"
+                    onChange={handleChange} 
+                  />
+                </div>
+              )}
 
-            {/* Password */}
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-              <input 
-                type={showPassword ? "text" : "password"} name="password" placeholder="Password" required
-                className="w-full pl-11 pr-12 py-3.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-brand-primary text-sm transition-all"
-                onChange={handleChange} 
-              />
+              {/* Restaurant Name - only for Partners */}
+              {user.role === 'partner' && (
+                <div className="relative group">
+                  <ChefHat className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] group-focus-within:text-[var(--brand-orange)] transition-colors" />
+                  <input 
+                    type="text" name="restaurantName" placeholder="Restaurant Name" required
+                    className="w-full pl-12 pr-5 py-4 rounded-[1.25rem] bg-[var(--bg-primary)] border border-transparent text-[var(--text-primary)] placeholder-[var(--text-secondary)]/50 focus:outline-none focus:border-[var(--brand-orange)] text-[13px] font-bold transition-all shadow-sm"
+                    onChange={handleChange} 
+                  />
+                </div>
+              )}
+
+              {/* Email */}
+              <div className="relative group">
+                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] group-focus-within:text-[var(--brand-orange)] transition-colors" />
+                <input 
+                  type="email" name="email" placeholder="Email Address" required
+                  className="w-full pl-12 pr-5 py-4 rounded-[1.25rem] bg-[var(--bg-primary)] border border-transparent text-[var(--text-primary)] placeholder-[var(--text-secondary)]/50 focus:outline-none focus:border-[var(--brand-orange)] text-[13px] font-bold transition-all shadow-sm"
+                  onChange={handleChange} 
+                />
+              </div>
+
+              {/* Password */}
+              <div className="relative group">
+                <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] group-focus-within:text-[var(--brand-orange)] transition-colors" />
+                <input 
+                  type={showPassword ? "text" : "password"} name="password" placeholder="Create Password" required
+                  className="w-full pl-12 pr-14 py-4 rounded-[1.25rem] bg-[var(--bg-primary)] border border-transparent text-[var(--text-primary)] placeholder-[var(--text-secondary)]/50 focus:outline-none focus:border-[var(--brand-orange)] text-[13px] font-bold transition-all shadow-sm"
+                  onChange={handleChange} 
+                />
+                <button 
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  className="absolute right-5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                  tabIndex="-1"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+
+              {/* Phone */}
+              <div className="relative group">
+                <Phone className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] group-focus-within:text-[var(--brand-orange)] transition-colors" />
+                <input 
+                  type="tel" name="phone" placeholder="Phone Number" 
+                  className="w-full pl-12 pr-5 py-4 rounded-[1.25rem] bg-[var(--bg-primary)] border border-transparent text-[var(--text-primary)] placeholder-[var(--text-secondary)]/50 focus:outline-none focus:border-[var(--brand-orange)] text-[13px] font-bold transition-all shadow-sm"
+                  onChange={handleChange} 
+                />
+              </div>
+
+              {/* Address */}
+              <div className="relative group">
+                <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] group-focus-within:text-[var(--brand-orange)] transition-colors" />
+                <input 
+                  type="text" name="address" placeholder={user.role === 'partner' ? 'Restaurant Address' : 'Delivery Address'}
+                  className="w-full pl-12 pr-5 py-4 rounded-[1.25rem] bg-[var(--bg-primary)] border border-transparent text-[var(--text-primary)] placeholder-[var(--text-secondary)]/50 focus:outline-none focus:border-[var(--brand-orange)] text-[13px] font-bold transition-all shadow-sm"
+                  onChange={handleChange} 
+                />
+              </div>
+
+              {/* Role Selector Dropdown */}
+              <div className="relative group">
+                <div className="absolute left-5 top-1/2 -translate-y-1/2 pointer-events-none">
+                  {user.role === 'partner' 
+                    ? <ChefHat className="w-4 h-4 text-[var(--brand-orange)]" />
+                    : <UtensilsCrossed className="w-4 h-4 text-[var(--brand-orange)]" />}
+                </div>
+                <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] pointer-events-none" />
+                <select
+                  name="role"
+                  value={user.role}
+                  onChange={(e) => { setUser({ ...user, role: e.target.value }); setError(""); }}
+                  className="w-full pl-12 pr-10 py-4 rounded-[1.25rem] bg-[var(--bg-primary)] border-2 border-[var(--brand-orange)]/30 text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-orange)] text-[13px] font-black transition-all cursor-pointer appearance-none"
+                >
+                  <option value="user">🍽️ &nbsp; I'm a Foodie (Order Food)</option>
+                  <option value="partner">👨‍🍳 &nbsp; I'm a Restaurant Partner (Sell Food)</option>
+                </select>
+              </div>
+              
               <button 
-                type="button"
-                onClick={() => setShowPassword(v => !v)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
-                tabIndex="-1"
+                type="submit" 
+                disabled={loading}
+                className="w-full h-14 font-black rounded-2xl transition-all shadow-xl mt-6 text-white text-[13px] uppercase tracking-widest disabled:opacity-60 active:scale-[0.98] bg-[var(--brand-orange)] hover:bg-orange-600 shadow-orange-500/25"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                 {loading ? "Joining..." : (user.role === 'partner' ? "Create Restaurant" : "Join QuickBites")}
               </button>
-            </div>
+            </form>
 
-            {/* Phone */}
-            <div className="relative">
-              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-              <input 
-                type="tel" name="phone" placeholder="Phone Number" 
-                className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-brand-primary text-sm transition-all"
-                onChange={handleChange} 
-              />
-            </div>
-
-            {/* Address */}
-            <div className="relative">
-              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-              <input 
-                type="text" name="address" placeholder="Delivery Address" 
-                className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-brand-primary text-sm transition-all"
-                onChange={handleChange} 
-              />
-            </div>
-            
-            {/* Role Select */}
-            <div className="pt-2">
-              <select name="role" onChange={handleChange} className="w-full py-3.5 px-4 rounded-xl bg-black/40 border border-white/10 text-gray-300 focus:outline-none focus:border-brand-primary appearance-none text-sm transition-all cursor-pointer">
-                <option value="user" className="bg-brand-gray text-white">Foodie (User)</option>
-                <option value="partner" className="bg-brand-gray text-white">Restaurant Partner</option>
-              </select>
-            </div>
-
-            <button 
-              type="submit" 
-              disabled={loading}
-              className={`w-full font-bold py-3.5 rounded-xl transition-all shadow-lg mt-4 text-white text-sm disabled:opacity-60 active:scale-[0.98] ${
-                user.role === 'partner' ? 'bg-brand-secondary hover:bg-red-500 shadow-brand-secondary/25' : 'bg-brand-primary hover:bg-orange-400 shadow-brand-primary/25'
-              }`}
-            >
-               {loading ? "Creating account..." : "Sign Up"}
-            </button>
-          </form>
-
-          <p className="text-sm mt-6 text-center text-gray-400">
-            Already have an account? <Link to="/login" className="text-brand-primary hover:underline font-semibold">Log in</Link>
-          </p>
+            <p className="text-[13px] mt-8 text-center text-[var(--text-secondary)] font-bold">
+              Already have an account? <Link to="/login" className="text-[var(--brand-orange)] hover:underline font-black">Log in</Link>
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

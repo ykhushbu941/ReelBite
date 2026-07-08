@@ -49,7 +49,7 @@ const foodSchema = new mongoose.Schema(
     cuisine: {
       type: String,
       default: "Other",
-      enum: ["Indian", "South Indian", "Chinese", "Italian", "Mexican", "American", "Japanese", "Other"]
+      enum: ["Indian", "South Indian", "Chinese", "Italian", "Mexican", "American", "Japanese", "Healthy", "Mediterranean", "Other"]
     },
 
     // 👤 who added this (partner)
@@ -74,7 +74,54 @@ const foodSchema = new mongoose.Schema(
         text: { type: String, required: true },
         createdAt: { type: Date, default: Date.now }
       }
-    ]
+    ],
+
+    // 👁️ Views count
+    views: {
+      type: Number,
+      default: 0
+    },
+
+    // 🤖 CARE: Culinary AI Reel Engine details
+    isAiGenerated: {
+      type: Boolean,
+      default: false
+    },
+    aiStoryboard: [
+      {
+        sceneNumber: Number,
+        visualPrompt: String,
+        voiceoverText: String,
+        audioDuration: Number
+      }
+    ],
+
+    // 🛡️ POOVV: Proof-of-Origin Video Verification
+    verificationMetadata: {
+      isVerified: { type: Boolean, default: false },
+      latitude: Number,
+      longitude: Number,
+      timestamp: { type: Date },
+      signature: String,
+      deviceId: String,
+      networkBssid: String
+    },
+
+    // 📊 VFQAI: Visual Food Quality & Authenticity Index
+    qualityScore: {
+      score: { type: Number, default: 8.5 },
+      visualSimilarity: { type: Number, default: 85 },
+      portionMatch: { type: Number, default: 88 },
+      steamMatch: { type: Number, default: 90 },
+      countReviewed: { type: Number, default: 12 }
+    },
+
+    // 📈 CEPE: Engagement metrics per-food for prediction engine
+    dwellMetrics: {
+      totalDwellTime: { type: Number, default: 0 }, // in seconds
+      loopCount: { type: Number, default: 0 },
+      purchaseProbability: { type: Number, default: 50 } // PPI percentage
+    }
   },
   {
     timestamps: true

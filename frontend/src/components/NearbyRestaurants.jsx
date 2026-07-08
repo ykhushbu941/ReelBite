@@ -1,4 +1,5 @@
-import { Star, Clock } from "lucide-react";
+import { Star, Clock, MapPin, ChevronRight } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function NearbyRestaurants({ foods, onRestaurantClick }) {
   // Extract unique restaurants from foods
@@ -35,45 +36,57 @@ export default function NearbyRestaurants({ foods, onRestaurantClick }) {
   if (restaurants.length === 0) return null;
 
   return (
-    <div className="mt-6 mb-2">
-      <div className="flex justify-between items-end mb-3">
-        <h2 className="font-bold text-lg md:text-xl text-white">Top Brands Near You</h2>
+    <div className="mt-12 mb-16 px-1">
+      <div className="flex justify-between items-center mb-8">
+        <h3 className="text-xl md:text-2xl font-black text-[var(--text-primary)] tracking-tight flex items-center">
+          Top Brands <div className="ml-4 h-[2px] w-12 bg-[var(--brand-orange)]/30 rounded-full" />
+        </h3>
+        <button className="text-[10px] font-black uppercase tracking-widest text-[var(--brand-orange)] flex items-center gap-1 group">
+           See All <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+        </button>
       </div>
 
-      <div className="flex overflow-x-auto space-x-5 no-scrollbar pb-4 -mx-4 px-4 snap-x snap-mandatory">
+      <div className="flex overflow-x-auto space-x-6 no-scrollbar pb-6 -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory">
         {restaurants.map((rest, i) => (
-          <div 
+          <motion.div 
              key={i} 
+             whileHover={{ y: -5 }}
+             whileTap={{ scale: 0.98 }}
              onClick={() => onRestaurantClick && onRestaurantClick(rest.name)}
-             className="min-w-[280px] max-w-[280px] md:min-w-[320px] md:max-w-[320px] snap-center bg-brand-gray rounded-[1.25rem] overflow-hidden shadow-lg border border-white/5 flex flex-col shrink-0 cursor-pointer hover:border-brand-primary/50 transition-colors"
+             className="min-w-[280px] max-w-[280px] md:min-w-[320px] md:max-w-[320px] snap-center bg-[var(--bg-surface)] rounded-[2.5rem] overflow-hidden shadow-sm border border-[var(--border-color)] flex flex-col shrink-0 cursor-pointer hover:shadow-xl hover:shadow-orange-500/5 transition-all duration-300"
           >
             {/* Image Banner */}
-            <div className="h-36 md:h-40 w-full relative">
-               <img src={rest.image} alt={rest.name} className="w-full h-full object-cover" />
-               <div className="absolute inset-0 bg-gradient-to-t from-[#1C1C1C] via-transparent to-transparent" />
-               <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-md text-[11px] font-extrabold text-white flex items-center shadow-sm border border-white/10 uppercase tracking-widest">
-                  PROMOTED
+            <div className="h-40 md:h-44 w-full relative group">
+               <img src={rest.image} alt={rest.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+               <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-surface)] via-transparent to-transparent opacity-60" />
+               <div className="absolute top-4 left-4 bg-white/20 backdrop-blur-xl px-3 py-1 rounded-xl text-[10px] font-black text-white flex items-center shadow-lg border border-white/20 uppercase tracking-[0.2em]">
+                  HOT DEAL 🔥
                </div>
             </div>
 
             {/* Details */}
-            <div className="p-4 bg-[#2A2A2A] flex-grow">
+            <div className="p-6 flex flex-col flex-grow">
                <div className="flex justify-between items-start mb-1.5">
-                  <h3 className="font-bold text-white truncate max-w-[180px] text-base md:text-lg">{rest.name}</h3>
-                  <div className="flex items-center bg-green-700 text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm">
+                  <h4 className="font-black text-[var(--text-primary)] truncate max-w-[180px] text-lg tracking-tight group-hover:text-[var(--brand-orange)] transition-colors">{rest.name}</h4>
+                  <div className="flex items-center bg-[#3D9970] text-white px-2.5 py-1 rounded-lg text-[11px] font-black shadow-lg shadow-[#3D9970]/20">
                      {rest.rating} <Star className="w-3 h-3 ml-1 fill-white" />
                   </div>
                </div>
                
-               <p className="text-sm text-gray-400 truncate mb-3"> {/* cuisines */}
-                   {rest.cuisines.length > 0 ? rest.cuisines.join(", ") : "Multi-cuisine"}
+               <p className="text-[13px] font-bold text-[var(--text-secondary)] truncate mb-6">
+                   {rest.cuisines.length > 0 ? rest.cuisines.join(", ") : "Premium Selections"}
                </p>
 
-               <div className="flex items-center text-[#FC8019] text-sm font-bold bg-[#FC8019]/10 w-fit px-3 py-1.5 rounded-lg border border-[#FC8019]/20">
-                   <Clock className="w-4 h-4 mr-1.5" /> {rest.time}
+               <div className="mt-auto flex items-center justify-between">
+                  <div className="flex items-center text-[var(--brand-orange)] text-[12px] font-black uppercase tracking-widest bg-[var(--brand-orange)]/5 px-3 py-1.5 rounded-xl border border-[var(--brand-orange)]/10">
+                      <Clock className="w-3.5 h-3.5 mr-2" /> {rest.time}
+                  </div>
+                  <div className="flex items-center text-[var(--text-secondary)] text-[11px] font-black">
+                     <MapPin className="w-3 h-3 mr-1" /> 2.4 km
+                  </div>
                </div>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
     </div>
