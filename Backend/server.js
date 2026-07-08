@@ -55,13 +55,11 @@ mongoose.connect(process.env.MONGO_URI)
 .then((conn) => console.log(`✅ MongoDB Connected to ${conn.connection.host}`))
 .catch((err) => console.error("❌ DB Connection Error:", err.message));
 
-// Only run listen() if we are NOT on Vercel
-if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "deploy") {
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-  });
-}
+// Run listen() for Render
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
 
 // Export for Vercel Serverless Function
 module.exports = app;
